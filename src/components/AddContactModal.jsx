@@ -15,27 +15,48 @@ function AddContactModal({ isOpen, onClose, onSave }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState({});
   const [category, setCategory] = useState("");
+  console.log(image);
+
+  const fileUpload = async () => {
+    // if (imageUpload.files.length > 0) {
+
+    let formData = new FormData();
+    formData.append("file", image);
+    formData.append("upload_preset", "ContactBook");
+
+    try {
+      let res = await fetch(
+        "https://api.cloudinary.com/v1_1/dsdnmgnpr/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      let data = await res.json();
+      return data.secure_url;
+    } catch (error) {
+      console.log(error);
+    }
+    // }
+  };
 
   const addData = async () => {
-   
     try {
       const docRef = await addDoc(collection(db, "contacts"), {
         name,
         email,
         phone,
-        category
+        category,
+        image: await fileUpload() || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s",
       });
-      
-      console.log(docRef)
 
+      console.log(docRef);
     } catch (error) {
       console.log(error);
     }
   };
-
-
 
   if (!isOpen) return null;
 
@@ -54,7 +75,7 @@ function AddContactModal({ isOpen, onClose, onSave }) {
         </h2>
 
         {/* Form Fields */}
-        <div  className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5">
           <Input
             type="text"
             name="name"
@@ -95,45 +116,43 @@ function AddContactModal({ isOpen, onClose, onSave }) {
           </div>
 
           {/* Image Upload */}
-          {/* <div>
+          <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Profile Picture
             </label>
 
             <div className="flex items-center gap-5">
+              {/* {formData.image ? null : ( */}
+              <label className="flex flex-col items-center justify-center w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer bg-gray-50 hover:border-indigo-500 hover:text-indigo-500 transition text-gray-400">
+                <span className="text-sm font-medium">Click to Upload</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  name="image"
+                  className="hidden"
+                  onChange={(e) => setImage(e.target.files[0])}
+                />
+              </label>
+              {/* )} */}
 
-              {formData.image ? null : (
-                <label className="flex flex-col items-center justify-center w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer bg-gray-50 hover:border-indigo-500 hover:text-indigo-500 transition text-gray-400">
-                  <span className="text-sm font-medium">Click to Upload</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    name="image"
-                    className="hidden"
-                    onChange={(e) =>
-                      setFormData({ ...formData, image: e.target.files[0] })
-                    }
-                  />
-                </label>
-              )}
-              {formData.image && (
-                <div className="relative">
-                  <img
+              {/* {formData.image && ( */}
+              <div className="relative">
+                {/* <img
                     src={URL.createObjectURL(formData.image)}
                     alt="preview"
                     className="w-32 h-32 rounded-xl object-cover shadow-md border"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, image: null })}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow hover:bg-red-600 transition"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+                  /> */}
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, image: null })}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow hover:bg-red-600 transition"
+                >
+                  ✕
+                </button>
+              </div>
+              {/* )} */}
             </div>
-          </div> */}
+          </div>
         </div>
 
         {/* Actions */}
