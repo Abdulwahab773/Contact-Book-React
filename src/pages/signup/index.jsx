@@ -11,6 +11,7 @@ function SignupPage() {
   let [email, setEmail] = useState("");
   let [password, setPassword] = useState("");
   let [fullName, setFullName] = useState("");
+  let [image, setImage] = useState({});
 
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ function SignupPage() {
 
       await updateProfile(response.user, {
         displayName: fullName,
+        photoURL: await fileUpload() || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s"
       });
 
       navigate("/dashboard");
@@ -36,6 +38,28 @@ function SignupPage() {
     e.preventDefault();
     signupUser();
   };
+
+  const fileUpload = async () => {
+    let formData = new FormData();
+    formData.append("file", image);
+    formData.append("upload_preset", "ContactBook");
+
+    try {
+      let res = await fetch(
+        "https://api.cloudinary.com/v1_1/dsdnmgnpr/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      let data = await res.json();
+      return data.secure_url;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
 
   return (
     <>
@@ -82,6 +106,22 @@ function SignupPage() {
                 type="password"
                 onChange={(e) => setPassword(e.target.value)}
                 value={password}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Your Profile Pic
+              </label>
+              <input
+                type="file"
+                className="block w-full text-sm text-gray-600 
+               file:mr-4 file:py-2 file:px-4
+               file:rounded-lg file:border-0
+               file:text-sm file:font-medium
+               file:bg-blue-50 file:text-blue-700
+               hover:file:bg-blue-100 cursor-pointer"
+                onChange={(e) => setImage(e.target.files[0])}
               />
             </div>
 

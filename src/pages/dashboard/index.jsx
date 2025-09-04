@@ -1,39 +1,103 @@
-import { onAuthStateChanged } from "firebase/auth";
-import React, { useState } from "react";
-import { auth } from "../../firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db } from "../../firebase";
+import AddContactModal from "../../components/AddContactModal";
+import { Star, Edit, Trash2, LogOut } from "lucide-react";
+import React, { use, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
-import AddContactModal from "../../components/AddContactModal";
-
 import {
-  Star,
-  Edit,
-  Trash2,
-  UserCircle,
-  LogOut,
-  Plus,
-  UserCircle2,
-  Settings,
-} from "lucide-react";
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+
+
+
 
 const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userPic, setUserPic] = useState();
+  const [userUID, setUserUID] = useState("");
 
-  const handleSaveContact = (contact) => {
-    console.log("New Contact:", contact);
+  const navigate = useNavigate();
+
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUserName(user.displayName);
+      setUserPic(user.photoURL);
+      setUserUID(user.uid)
+    }
+  });
+
+  
+  useEffect(() => {
+    getData();
+  }, [userUID]);
+
+  const [data, setData] = useState([]);
+
+  
+  const getData = async () => {
+    try {
+
+      // if (!userUID) return;
+      
+      
+      const collectionRef = collection(db, "contacts");
+      const dbRef = query(collectionRef, where("uid", "==" , userUID))
+      
+      let tempArr= []
+      onSnapshot(dbRef, (snapshot) => {
+        tempArr = [];
+        
+        snapshot.forEach((doc) => {
+          tempArr.push({
+            ...doc.data(),
+            id: doc.id
+          })
+        })
+        setData(tempArr); 
+      })
+
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const [contacts] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      phone: "123-456-7890",
-      email: "john@mail.com",
-      category: "Friends",
-      favorite: false,
-      image: "https://i.pravatar.cc/100?img=1",
-    },
-  ]);
+  
+  
+  const addToFav = async (id) => {
+    const docRef = doc(db, "contacts", id);
+
+    await updateDoc(docRef, {
+      isFavorite: true,
+    });
+    alert("Added To Favorites")
+    getData();
+  };
+
+  
+  
+  const signOutUser = () => {
+    signOut(auth)
+      .then(() => {
+        console.log("User signed out successfully.");
+        navigate("/");
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+      });
+  };
+
+
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -45,14 +109,17 @@ const Dashboard = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <img
-              src="https://via.placeholder.com/40"
+              src={userPic}
               alt="User"
-              className="w-12 h-12 rounded-full border"
+              className="w-12 h-12 rounded-full border border-gray-200"
             />
-            <span className="font-medium text-gray-700">Abdul Wahab</span>
+            <span className="font-medium text-gray-700">{userName}</span>
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-medium shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200">
+          <button
+            onClick={signOutUser}
+            className="flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-medium shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200"
+          >
             <LogOut className="w-5 h-5" />
             Logout
           </button>
@@ -99,61 +166,63 @@ const Dashboard = () => {
         <AddContactModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSave={handleSaveContact}
         />
       </div>
 
       {/* Contacts Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mx-auto w-[93%]">
-        {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="bg-white rounded-2xl shadow-md p-4 flex flex-col"
-          >
-            {/* Profile */}
-            <div className="flex items-center gap-4 mb-3">
-              <img
-                src={contact.image}
-                alt={contact.name}
-                className="w-14 h-14 rounded-full border"
-              />
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {contact.name}
-                </h2>
-                <p className="text-sm text-gray-600">{contact.phone}</p>
-                <p className="text-sm text-gray-600">{contact.email}</p>
+        {data
+          ? data.map((contact) => (
+              <div
+                key={contact.id}
+                className="bg-white rounded-2xl shadow-md p-4 flex flex-col"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <img
+                    src={contact.image}
+                    alt={contact.name}
+                    className="w-14 h-14 rounded-full border border-gray-400"
+                  />
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      {contact.name}
+                    </h2>
+                    <p className="text-sm text-gray-600">{contact.phone}</p>
+                    <p className="text-sm text-gray-600">{contact.email}</p>
+                  </div>
+                </div>
+                {/* Category Badge */}
+                <span className="inline-block w-fit px-3 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded-full mb-4">
+                  {contact.category}
+                </span>
+
+                {/* Actions */}
+                <div className="mt-auto flex justify-between items-center border-t pt-3">
+                  <button
+                    onClick={() => {
+                      addToFav(contact.id);
+                    }}
+                    className="text-yellow-500 hover:scale-110 transition"
+                  >
+                    <Star
+                      className={`w-5 h-5 ${
+                        contact.isFavorite ? "fill-yellow-500" : "fill-none"
+                      }`}
+                    />
+                  </button>
+
+                  <div className="flex gap-3">
+                    <button className="text-blue-500 hover:scale-110 transition">
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button className="text-red-500 hover:scale-110 transition">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Category Badge */}
-            <span className="inline-block w-fit px-3 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded-full mb-4">
-              {contact.category}
-            </span>
-
-            {/* Actions */}
-            <div className="mt-auto flex justify-between items-center border-t pt-3">
-              {/* Favorite */}
-              <button className="text-yellow-500 hover:scale-110 transition">
-                <Star
-                  className={`w-5 h-5 ${
-                    contact.favorite ? "fill-yellow-500" : "fill-none"
-                  }`}
-                />
-              </button>
-
-              {/* Edit & Delete */}
-              <div className="flex gap-3">
-                <button className="text-blue-500 hover:scale-110 transition">
-                  <Edit className="w-5 h-5" />
-                </button>
-                <button className="text-red-500 hover:scale-110 transition">
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+            ))
+          : "No Contacts To Show"}
       </div>
     </div>
   );

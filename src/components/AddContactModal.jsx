@@ -1,27 +1,24 @@
 import { useState } from "react";
 import Input from "./Input";
-import { db } from "../firebase";
-import { addDoc, collection } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 function AddContactModal({ isOpen, onClose, onSave }) {
-  // const [formData, setFormData] = useState({
-  //   name: "",
-  //   phone: "",
-  //   email: "",
-  //   category: "Friends",
-  //   image: "",
-  // });
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [image, setImage] = useState({});
   const [category, setCategory] = useState("");
-  console.log(image);
+  const [uid, setUID] = useState("");
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUID(user.uid);
+    }
+  });
 
   const fileUpload = async () => {
-    // if (imageUpload.files.length > 0) {
-
     let formData = new FormData();
     formData.append("file", image);
     formData.append("upload_preset", "ContactBook");
@@ -39,7 +36,6 @@ function AddContactModal({ isOpen, onClose, onSave }) {
     } catch (error) {
       console.log(error);
     }
-    // }
   };
 
   const addData = async () => {
@@ -49,10 +45,13 @@ function AddContactModal({ isOpen, onClose, onSave }) {
         email,
         phone,
         category,
-        image: await fileUpload() || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s",
+        image:
+          (await fileUpload()) ||
+          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s",
+        created_At: Timestamp.now(),
+        isFavorite: false,
+        uid,
       });
-
-      console.log(docRef);
     } catch (error) {
       console.log(error);
     }
@@ -61,9 +60,16 @@ function AddContactModal({ isOpen, onClose, onSave }) {
   if (!isOpen) return null;
 
   const handleSubmit = () => {
-    // onSave(formData);
     addData();
-    onClose();
+
+    setTimeout(() => {
+      onClose();
+    }, 2000);
+
+    setEmail("");
+    setName("");
+    setPhone("");
+    setImage({});
   };
 
   return (
@@ -117,14 +123,15 @@ function AddContactModal({ isOpen, onClose, onSave }) {
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">
+            <label className="block text-sm text-center font-medium text-gray-600 mb-2">
               Profile Picture
             </label>
 
-            <div className="flex items-center gap-5">
-              {/* {formData.image ? null : ( */}
-              <label className="flex flex-col items-center justify-center w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer bg-gray-50 hover:border-indigo-500 hover:text-indigo-500 transition text-gray-400">
-                <span className="text-sm font-medium">Click to Upload</span>
+            <div className="flex flex-col items-center">
+              <label className="flex flex-col items-center justify-center w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer bg-white hover:border-indigo-400 hover:bg-indigo-50 transition-colors duration-200">
+                <span className="text-sm font-medium text-gray-500">
+                  {image ? image.name : "Click to Upload"}
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -133,38 +140,23 @@ function AddContactModal({ isOpen, onClose, onSave }) {
                   onChange={(e) => setImage(e.target.files[0])}
                 />
               </label>
-              {/* )} */}
-
-              {/* {formData.image && ( */}
-              <div className="relative">
-                {/* <img
-                    src={URL.createObjectURL(formData.image)}
-                    alt="preview"
-                    className="w-32 h-32 rounded-xl object-cover shadow-md border"
-                  /> */}
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, image: null })}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow hover:bg-red-600 transition"
-                >
-                  ✕
-                </button>
-              </div>
-              {/* )} */}
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-4 mt-3">
+        <div className="flex justify-center gap-4 mt-3.5">
           <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl border border-gray-300 bg-gray-100 hover:bg-gray-200 transition"
+            onClick={() => {
+              onClose();
+              setImage()
+            }}
+            className="px-5 py-2 cursor-pointer rounded-xl border border-gray-300 bg-gray-100 hover:bg-gray-200 transition"
           >
             Cancel
           </button>
           <button
-            className="px-6 py-2 rounded-xl bg-indigo-500 text-white font-medium shadow-md hover:bg-indigo-600 transition"
+            className="px-6 py-2 rounded-xl cursor-pointer bg-indigo-500 text-white font-medium shadow-md hover:bg-indigo-600 transition"
             onClick={handleSubmit}
           >
             Save Contact
