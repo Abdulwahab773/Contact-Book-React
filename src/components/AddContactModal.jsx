@@ -1,15 +1,15 @@
 import { useState } from "react";
 import Input from "./Input";
 import { auth, db } from "../firebase";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
-function AddContactModal({ isOpen, onClose, onSave }) {
+function AddContactModal({ isOpen, onClose, checkMode, contactID }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [image, setImage] = useState({});
-  const [category, setCategory] = useState("");
+  const [image, setImage] = useState();
+  const [category, setCategory] = useState("Friends");
   const [uid, setUID] = useState("");
 
   onAuthStateChanged(auth, (user) => {
@@ -34,7 +34,7 @@ function AddContactModal({ isOpen, onClose, onSave }) {
       let data = await res.json();
       return data.secure_url;
     } catch (error) {
-      console.log(error);
+      console.log(error.message);
     }
   };
 
@@ -59,8 +59,32 @@ function AddContactModal({ isOpen, onClose, onSave }) {
 
   if (!isOpen) return null;
 
+  
+  const updateContact = async () => {
+    const dbRef = doc(db, "contacts", contactID);
+
+    await updateDoc(dbRef, {
+      name,
+      email,
+      phone,
+      category,
+      image:
+        (await fileUpload()) ||
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s",
+      created_At: Timestamp.now(),
+      isFavorite: false,
+      uid,
+    });
+  };
+
+
   const handleSubmit = () => {
-    addData();
+
+    if (checkMode === "add") {
+      addData();
+    } else {
+      updateContact();
+    }
 
     setTimeout(() => {
       onClose();
@@ -69,18 +93,16 @@ function AddContactModal({ isOpen, onClose, onSave }) {
     setEmail("");
     setName("");
     setPhone("");
-    setImage({});
+    setImage();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg h-[96%] relative">
-        {/* Heading */}
         <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
           Add New Contact
         </h2>
 
-        {/* Form Fields */}
         <div className="flex flex-col gap-5">
           <Input
             type="text"
@@ -104,7 +126,6 @@ function AddContactModal({ isOpen, onClose, onSave }) {
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Category
@@ -121,7 +142,6 @@ function AddContactModal({ isOpen, onClose, onSave }) {
             </select>
           </div>
 
-          {/* Image Upload */}
           <div>
             <label className="block text-sm text-center font-medium text-gray-600 mb-2">
               Profile Picture
@@ -144,12 +164,11 @@ function AddContactModal({ isOpen, onClose, onSave }) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-center gap-4 mt-3.5">
           <button
             onClick={() => {
               onClose();
-              setImage()
+              setImage();
             }}
             className="px-5 py-2 cursor-pointer rounded-xl border border-gray-300 bg-gray-100 hover:bg-gray-200 transition"
           >

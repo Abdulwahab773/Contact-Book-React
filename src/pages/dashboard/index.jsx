@@ -9,6 +9,7 @@ import Button from "../../components/Button";
 import Footer from "../../components/Footer";
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -22,7 +23,9 @@ const Dashboard = () => {
   const [userName, setUserName] = useState("");
   const [userPic, setUserPic] = useState();
   const [userUID, setUserUID] = useState("");
-
+  const [data, setData] = useState([]);
+  const [mode , setMode] = useState("");
+  const [docID, setDocID] = useState("")
   const navigate = useNavigate();
 
   onAuthStateChanged(auth, (user) => {
@@ -36,8 +39,6 @@ const Dashboard = () => {
   useEffect(() => {
     getData();
   }, [userUID]);
-
-  const [data, setData] = useState([]);
 
   const getData = async () => {
     try {
@@ -102,7 +103,6 @@ const Dashboard = () => {
                 where("category", "==", catg)
               );
 
-              
         let tempArr = [];
         onSnapshot(dbRef, (snapshot) => {
           tempArr = [];
@@ -122,6 +122,13 @@ const Dashboard = () => {
 
     getData();
   };
+
+  const deleteContact = async (id) => {
+    await deleteDoc(doc(db, "contacts", id));
+    console.log("deleted successfully");
+  };
+
+
 
   return (
     <>
@@ -170,7 +177,10 @@ const Dashboard = () => {
           </select>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setIsModalOpen(true);
+              setMode("add");
+            }}
             className="flex items-center justify-center gap-2 cursor-pointer px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium shadow-md hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg active:scale-95 transition-all duration-200 w-full md:w-auto"
           >
             <svg
@@ -193,6 +203,8 @@ const Dashboard = () => {
           <AddContactModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            checkMode={mode}
+            contactID={docID}
           />
         </div>
 
@@ -236,10 +248,23 @@ const Dashboard = () => {
                   </button>
 
                   <div className="flex gap-3">
-                    <button className="text-blue-500 hover:scale-110 transition  cursor-pointer">
+                    <button
+                      onClick={() => {
+                        setIsModalOpen(true);
+                        setMode("update");
+                        setDocID(contact.id)
+                      }}
+                      className="text-blue-500 hover:scale-110 transition  cursor-pointer"
+                    >
                       <Edit className="w-5 h-5" />
                     </button>
-                    <button className="text-red-500 hover:scale-110 transition cursor-pointer">
+
+                    <button
+                      onClick={() => {
+                        deleteContact(contact.id);
+                      }}
+                      className="text-red-500 hover:scale-110 transition cursor-pointer"
+                    >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
