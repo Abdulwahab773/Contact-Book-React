@@ -27,7 +27,7 @@ function SignupPage() {
         displayName: fullName,
         photoURL: await fileUpload() || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl8UcJiZxXc_q-Zr-1dohkW5sd8lTxvpPj-g&s"
       });
-
+      localStorage.setItem("uid", response.user.uid);
       navigate("/dashboard");
     } catch (error) {
       console.log(error);

@@ -3,7 +3,7 @@ import { auth, db } from "../../firebase";
 import AddContactModal from "../../components/AddContactModal";
 import { Star, Edit, Trash2, LogOut } from "lucide-react";
 import React, { use, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import Footer from "../../components/Footer";
@@ -11,21 +11,25 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
   onSnapshot,
   query,
   updateDoc,
   where,
 } from "firebase/firestore";
+import Loader from "../../components/Loader";
 
 const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userPic, setUserPic] = useState();
   const [userUID, setUserUID] = useState("");
   const [data, setData] = useState([]);
-  const [mode , setMode] = useState("");
-  const [docID, setDocID] = useState("")
+  const [mode, setMode] = useState("");
+  const [docID, setDocID] = useState("");
+  const [searchContact, setSearchContact] = useState("");
+  const [loading, setLoading] = useState(true)
+  
   const navigate = useNavigate();
 
   onAuthStateChanged(auth, (user) => {
@@ -36,11 +40,15 @@ const Dashboard = () => {
     }
   });
 
+
   useEffect(() => {
     getData();
   }, [userUID]);
 
+  
+  
   const getData = async () => {
+    
     try {
       if (!userUID) return;
 
@@ -61,8 +69,14 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false)
     }
   };
+
+
+
+
 
   const addToFav = async (id) => {
     const docRef = doc(db, "contacts", id);
@@ -71,13 +85,13 @@ const Dashboard = () => {
       isFavorite: true,
     });
     alert("Added To Favorites");
-    getData();
   };
 
   const signOutUser = () => {
     signOut(auth)
       .then(() => {
         console.log("User signed out successfully.");
+        localStorage.removeItem("uid")
         navigate("/");
       })
       .catch((error) => {
@@ -128,77 +142,127 @@ const Dashboard = () => {
     console.log("deleted successfully");
   };
 
-
-
   return (
-    <>
+    <>    
       <div className="min-h-screen bg-gray-100">
         <nav className="bg-white shadow-sm px-6 py-3 flex items-center justify-between">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text text-3xl font-bold cursor-pointer hover:scale-105 duration-300">
-            ContactBook
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text text-2xl md:text-3xl font-bold cursor-pointer hover:scale-105 duration-300">
+            <Link to={"/"}>ContactBook</Link>
           </div>
-          <div className="flex items-center gap-4">
+
+          <div className="hidden md:flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img
                 src={userPic}
                 alt="User"
-                className="w-12 h-12 rounded-full border border-gray-200"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-gray-200"
               />
               <span className="font-medium text-gray-700">{userName}</span>
             </div>
 
             <button
               onClick={signOutUser}
-              className="flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-medium shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200"
+              className="flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-medium shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200 "
             >
               <LogOut className="w-5 h-5" />
               Logout
             </button>
           </div>
+
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2  rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none cursor-pointer"
+            >
+              <svg
+                className="w-7 h-7 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {isOpen && (
+            <div className="absolute top-16 right-6 bg-white shadow-lg rounded-lg p-4 flex flex-col gap-3  w-48 border border-blue-500">
+              <div className="flex items-center gap-2 mx-auto">
+                <img
+                  src={userPic}
+                  alt="User"
+                  className="w-10 h-10 rounded-full border border-gray-200"
+                />
+                <span className="font-medium text-gray-700">{userName}</span>
+              </div>
+
+              <button
+                onClick={signOutUser}
+                className="flex cursor-pointer
+                 items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white font-medium shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200"
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
+            </div>
+          )}
         </nav>
 
-        <div className="flex md:flex-row md:items-center w-full justify-center gap-5 mb-10 mt-5 ">
-          <input
-            type="text"
-            placeholder="Search contacts..."
-            className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full md:w-72 transition"
-          />
-
-          <select
-            onChange={(e) => {
-              checkingVal(e.target.value);
-            }}
-            className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer transition w-full md:w-40"
-          >
-            <option value="all">All</option>
-            <option value="Friends">Friends</option>
-            <option value="Family">Family</option>
-            <option value="Work">Work</option>
-          </select>
-
-          <button
-            onClick={() => {
-              setIsModalOpen(true);
-              setMode("add");
-            }}
-            className="flex items-center justify-center gap-2 cursor-pointer px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium shadow-md hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg active:scale-95 transition-all duration-200 w-full md:w-auto"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4v16m8-8H4"
+        <div className="flex flex-col md:flex-row md:items-center w-full justify-center gap-4 md:gap-5 mb-10 mt-5 px-4 md:px-0">
+          {data.length > 0 && (
+            <>
+              <Input
+                classes={
+                  "px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full md:w-72 transition"
+                }
+                placeholder={"Search Contacts..."}
+                onChange={(e) => setSearchContact(e.target.value)}
+                value={searchContact}
               />
-            </svg>
-            Add Contact
-          </button>
+
+              <select
+                onChange={(e) => {
+                  checkingVal(e.target.value);
+                }}
+                className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer transition w-full md:w-40"
+              >
+                <option value="all">All</option>
+                <option value="Friends">Friends</option>
+                <option value="Family">Family</option>
+                <option value="Work">Work</option>
+              </select>
+
+              <Button
+                onClick={() => {
+                  setIsModalOpen(true);
+                  setMode("add");
+                }}
+                className="flex items-center justify-center gap-2 cursor-pointer px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium shadow-md hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg active:scale-95 transition-all duration-200 w-full md:w-auto"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Contact
+              </Button>
+            </>
+          )}
 
           <AddContactModal
             isOpen={isModalOpen}
@@ -210,80 +274,129 @@ const Dashboard = () => {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mx-auto w-[93%]">
           {data.length > 0 ? (
-            data.map((contact) => (
-              <div
-                key={contact.id}
-                className="bg-white rounded-2xl shadow-md p-4 flex flex-col mb-4"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <img
-                    src={contact.image}
-                    alt={contact.name}
-                    className="w-14 h-14 rounded-full border border-gray-400"
-                  />
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      {contact.name}
-                    </h2>
-                    <p className="text-sm text-gray-600">{contact.phone}</p>
-                    <p className="text-sm text-gray-600">{contact.email}</p>
-                  </div>
-                </div>
-                <span className="inline-block w-fit px-3 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded-full mb-4">
-                  {contact.category}
-                </span>
+            (() => {
+              const filteredData = data.filter(
+                (contact) =>
+                  contact.name
+                    .toLowerCase()
+                    .includes(searchContact.toLowerCase()) ||
+                  contact.phone.includes(searchContact) ||
+                  contact.email
+                    .toLowerCase()
+                    .includes(searchContact.toLowerCase())
+              );
 
-                <div className="mt-auto flex justify-between items-center border-t pt-3">
-                  <button
-                    onClick={() => {
-                      addToFav(contact.id);
-                    }}
-                    className="text-yellow-500 hover:scale-110 transition"
+              return filteredData.length > 0 ? (
+                filteredData.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className="bg-white rounded-2xl shadow-md p-4 flex flex-col mb-4"
                   >
-                    <Star
-                      className={`w-5 h-5 cursor-pointer ${
-                        contact.isFavorite ? "fill-yellow-500" : "fill-none"
-                      }`}
-                    />
-                  </button>
+                    <div className="flex items-center gap-4 mb-3">
+                      <img
+                        src={contact.image}
+                        alt={contact.name}
+                        className="w-14 h-14 rounded-full border border-gray-400"
+                      />
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-800">
+                          {contact.name}
+                        </h2>
+                        <p className="text-sm text-gray-600">{contact.phone}</p>
+                        <p className="text-sm text-gray-600">{contact.email}</p>
+                      </div>
+                    </div>
+                    <span className="inline-block w-fit px-3 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded-full mb-4">
+                      {contact.category}
+                    </span>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setIsModalOpen(true);
-                        setMode("update");
-                        setDocID(contact.id)
-                      }}
-                      className="text-blue-500 hover:scale-110 transition  cursor-pointer"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
+                    <div className="mt-auto flex justify-between items-center border-t pt-3">
+                      <button
+                        onClick={() => {
+                          addToFav(contact.id);
+                        }}
+                        className="text-yellow-500 hover:scale-110 transition"
+                      >
+                        <Star
+                          className={`w-5 h-5 cursor-pointer ${
+                            contact.isFavorite ? "fill-yellow-500" : "fill-none"
+                          }`}
+                        />
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        deleteContact(contact.id);
-                      }}
-                      className="text-red-500 hover:scale-110 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            setIsModalOpen(true);
+                            setMode("update");
+                            setDocID(contact.id);
+                          }}
+                          className="text-blue-500 hover:scale-110 transition cursor-pointer"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            deleteContact(contact.id);
+                          }}
+                          className="text-red-500 hover:scale-110 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="col-span-full flex flex-col items-center mt-20 justify-center text-center py-12">
+                  <div className="text-5xl mb-3">📭</div>
+                  <h2 className="text-lg font-semibold text-gray-700 mb-1">
+                    No Contacts Found!
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Try adjusting your search.
+                  </p>
                 </div>
-              </div>
-            ))
+              );
+            })()
           ) : (
             <div className="col-span-full flex flex-col items-center mt-20 justify-center text-center py-12">
               <div className="text-5xl mb-3">📭</div>
               <h2 className="text-lg font-semibold text-gray-700 mb-1">
                 No Contacts Found
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mb-4">
                 Start adding your contacts to see them here.
               </p>
+              <Button
+                onClick={() => {
+                  setIsModalOpen(true);
+                  setMode("add");
+                }}
+                className="flex items-center justify-center gap-2 cursor-pointer px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium shadow-md hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg active:scale-95 transition-all duration-200 w-full md:w-auto"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Contact
+              </Button>
             </div>
           )}
         </div>
       </div>
+
       <Footer />
     </>
   );

@@ -8,21 +8,23 @@ function HomePage() {
   return (
     <>
       <Navbar />
-
+      
       <section className="flex flex-col md:flex-row items-center justify-between px-10 pt-32 pb-20 max-w-7xl mx-auto">
-        <div className="max-w-lg animate-fadeIn">
-          <h2 className="text-6xl font-extrabold leading-tight">
+        <div className="max-w-lg animate-fadeIn text-center md:text-left ">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight">
             Manage Your{" "}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
               Contacts
             </span>{" "}
             Smarter
           </h2>
-          <p className="mt-6 text-lg text-gray-600">
+
+          <p className="mt-6 text-base sm:text-lg text-gray-600">
             Organize, favorite and remember every important connection. A modern
             contact manager powered by cloud.
           </p>
-          <div className="mt-8 flex gap-4">
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <Link to={"/login"}>
               <Button text="Get Started" type="primary" />
             </Link>
@@ -31,6 +33,7 @@ function HomePage() {
             </Link>
           </div>
         </div>
+
         <img
           src={Logo}
           alt="Contact Illustration"

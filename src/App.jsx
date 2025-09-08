@@ -7,17 +7,26 @@ import ContactPage from "./pages/contact";
 import LoginPage from "./pages/login";
 import SignupPage from "./pages/signup";
 import Dashboard from "./pages/dashboard";
+import PrivateRoute from "./routes/privateRoute";
+import AuthRoute from "./routes/authRoute";
 
 function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route index element={<HomePage />} />
+
+        <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
+
+        <Route element={<AuthRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+        </Route>
+
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>

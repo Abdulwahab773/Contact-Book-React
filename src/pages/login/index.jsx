@@ -16,7 +16,7 @@ function LoginPage() {
   const loginUser = async () => {
     try {
       const res = await signInWithEmailAndPassword(auth, email, password);
-
+      localStorage.setItem("uid", res.user.uid);
       navigate("/dashboard");
     } catch (error) {
       console.log(error);

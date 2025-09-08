@@ -1,8 +1,6 @@
-import React from "react";
-
-function Button({ text, type = "primary", onClick }) {
+function Button({ text, type = "primary", onClick, children, className }) {
   const base =
-    "px-8 py-3 rounded-xl font-semibold transition duration-300 shadow-md cursor-pointer";
+    "px-8 py-3 rounded-xl font-semibold transition duration-300 shadow-md cursor-pointer flex items-center justify-center gap-2 w-full md:w-auto";
 
   const styles = {
     primary: `${base} bg-blue-600 text-white hover:bg-blue-700`,
@@ -10,7 +8,8 @@ function Button({ text, type = "primary", onClick }) {
   };
 
   return (
-    <button className={styles[type]} onClick={onClick}>
+    <button className={`${styles[type]} ${className || ""}`} onClick={onClick}>
+      {children}
       {text}
     </button>
   );
